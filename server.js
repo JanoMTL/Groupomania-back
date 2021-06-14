@@ -1,5 +1,6 @@
 const http = require('http'); // pour plus de sécurité, Je recommande l'utilisation de https qui requiert un certificat SSL à obtenir avec un nom de domaine
 const app = require('./app');
+const db = require('./models');
 
 const normalizePort = val => {
   const port = parseInt(val, 10);
@@ -47,4 +48,9 @@ server.on('listening', () => {
   console.log('Listening on ' + bind);
 });
 
-server.listen(port);
+db.sequelize.sync().then((req)=>{
+  server.listen(port, () =>
+  {console.log('Serveur running')
+  });
+})
+

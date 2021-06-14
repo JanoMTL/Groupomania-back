@@ -1,25 +1,15 @@
-const express = require('express'); 
-const mysql = require('mysql'); 
+const express = require('express');  
 const userRoutes = require('./routes/user')
 const app = express();
 
-const db = mysql.createConnection({
-    host:'localhost', 
-    user:'root', 
-    password:'',
-    database:'P7_OC'
-})
+const cors = require ('cors')
 
-db.connect((error) => {
-    if(error){
-        console.log(error)
-    } else{
-        console.log('Connected to MySQL Database ...')
-    }
-})
+app.use (express.urlencoded ({ extended: true }));
+app.use(express.json()); 
 
 
 
-app.use('/api/user', userRoutes);
+
+
 
 module.exports = app;
