@@ -1,36 +1,59 @@
-  
+
+const jsonwebtoken = require ('jsonwebtoken')  
 const bcrypt = require('bcrypt')
-const token = require('../middlewares/token')
+const cryptojs = require('crypto-js')
 const db = require('../models');
+const {Op}= require('sequelize')
 
 exports.signUp = async (req, res) => {
-    console.log(req.body)
-    try {
+    
       const user = await db.User.findOne({
-        where: { email: req.body.email },
+        where: { [Op.or]:[{email: req.body.email},{pseudo: req.body.pseudo}] },
       });
       if (user !== null) {
-        if (user.pseudo === req.body.pseudo) {
-          return res.status(400).json({ error: "ce pseudo est déjà utilisé" });
-        }
+          return res.status(403).json({ error: "identifiant dejà pris" });
+  
       } else {
         const hash = await bcrypt.hash(req.body.password, 10);
         const newUser = await db.User.create({
           pseudo: req.body.pseudo,
-          email: req.body.email,
+          email: cryptojs.HmacSHA256(req.body.email, 'secretemail').toString(), 
           password: hash,
           admin: false,
-        });
-  
-        const brandNewToken = await token.giveToken(newUser);
-        res.status(201).send({
-          user: newUser,
-          token: brandNewToken.token,
-          expires: brandNewToken.expiresIn,
-          message: `Votre compte est bien créé ${newUser.pseudo} !`,
-        });
+            });
+            return res.status(201).json({})
+       
       }
-    } catch (error) {
-      return res.status(400).send({ error: "email déjà utilisé" });
-    }
   };
+
+  exports.login = async (req, res) => {
+    
+    const cryptedResearchedEmail = cryptojs.HmacSHA256(req.body.email, 'secretemail').toString();
+      const user = await db.User.findOne({
+        where: { email: cryptedResearchedEmail },
+      }); // on vérifie que l'adresse mail figure bien dan la bdd
+      if (user === null) {
+          console.log(user)
+        return res.status(403).send({ error: "Connexion échouée" });
+      } else {
+        const hash = await bcrypt.compare(req.body.password, user.password); // on compare les mots de passes
+        if (!hash) {
+          return res.status(401).send({ error: "Mot de passe incorrect !" });
+        } else {
+            const newToken = jsonwebtoken.sign(
+                { userId: user.id },
+                'secrettoken',
+                { expiresIn: '1h' }
+            );
+          res.status(200).send({
+            // on renvoie le user et le token
+            user: user,
+            token: newToken.token,
+            message: "Bonjour " + user.pseudo + " !",
+          });
+        }
+      }
+    
+      return res.status(500).send({ error: "Erreur serveur" });
+    }
+  

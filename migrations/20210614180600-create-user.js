@@ -21,9 +21,7 @@ module.exports = {
       photo: {
         type: Sequelize.STRING
       },
-      biologi: {
-        type: Sequelize.STRING(500)
-      },
+      
       admin: {
         type: Sequelize.BOOLEAN, allowNull: false, default: false
       },
