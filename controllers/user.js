@@ -21,11 +21,11 @@ exports.signUp = async (req, res) => {
         const hash = await bcrypt.hash(req.body.password, 10);
         const newUser = await db.User.create({
           pseudo: req.body.pseudo,
-          email: cryptojs.HmacSHA256(req.body.email, 'secretemail').toString(), 
+          email: cryptojs.HmacSHA256(req.body.email, process.env.EMAIL_KEY).toString(), 
           password: hash,
           admin: false,
             });
-            return res.status(201).json({})
+            return res.status(201).json({message: 'Profile créé avec succés !'})
        
       }
   };
@@ -35,7 +35,7 @@ exports.signUp = async (req, res) => {
 
   exports.login = async (req, res) => {
     
-    const cryptedResearchedEmail = cryptojs.HmacSHA256(req.body.email, 'secretemail').toString();
+    const cryptedResearchedEmail = cryptojs.HmacSHA256(req.body.email,process.env.EMAIL_KEY).toString();
       const user = await db.User.findOne({
         where: { email: cryptedResearchedEmail },
       }); // on vérifie que l'adresse mail figure bien dan la bdd
@@ -49,13 +49,13 @@ exports.signUp = async (req, res) => {
         } else {
             const newToken = jsonwebtoken.sign(
                 { userId: user.id },
-                'secrettoken',
+                process.env.TOKEN_KEY,
                 { expiresIn: '1h' }
             );
           res.status(200).send({
             // Création  et envoi du Token 
             user: user,
-            token: newToken.token,
+            token: newToken,
             message: "Bonjour " + user.pseudo + " !",
           });
         }
