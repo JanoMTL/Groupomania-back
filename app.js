@@ -2,6 +2,7 @@ const express = require('express');
 const { sequelize } = require('./models/index'); 
 
 const userRoutes = require('./routes/user')
+const postRoutes = require('./routes/post')
 const app = express();
 
 const cors = require ('cors')
@@ -14,6 +15,7 @@ app.use(cors());
 
 
 app.use('/api/user', userRoutes);
+app.use('/api/post', postRoutes);
 
 const dbTest = async function () {
     try {
