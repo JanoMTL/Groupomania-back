@@ -1,6 +1,7 @@
 const db = require("../models"); 
 const fs = require("fs"); //
 const multer =require('multer');
+const tokenId = require('../middlewares/tokenId')
 
 
 exports.getAll = async (req, res) => {
@@ -17,10 +18,6 @@ exports.getAll = async (req, res) => {
         ],
       });
       res.status(200).send(posts);
-    
-      return res.status(500).send({
-        error: "Opération impossible",
-      });
     
   };
 
@@ -40,7 +37,6 @@ exports.getAll = async (req, res) => {
       });
       res.status(200).json(post);
    
-      return res.status(500).send({ error: "Erreur serveur" });
     
 };
 
@@ -50,7 +46,7 @@ exports.createOne = async (req, res) => {
     
       const user = await db.User.findOne({
         attributes: ["pseudo", "id", "photo"],
-        where: { id: userId },
+        where: { id: req.params.id },
       });
       if (user !== null) {
         if (req.file) {
@@ -84,8 +80,10 @@ exports.createOne = async (req, res) => {
     
   };
   exports.updateOne = async (req, res) => {
-    
+
+      const userId = req.body.userId;
       let newImage;
+      
       let post = await db.Post.findOne({ where: { id: req.params.id } });
       if (userId === post.UserId) {
         if (req.file) {
@@ -119,4 +117,29 @@ exports.createOne = async (req, res) => {
     
   };
 
+
+  exports.deleteOne = async (req, res) => {
+   
+      const userId = tokenId.verifyId(req)
+      const post = await db.Post.findOne({ where: { id: req.params.id } });
+      console.log(userId);
+      if (userId === post.UserId ) {
+        if (post.imageUrl) {
+          const filename = post.imageUrl.split("/images")[1];
+          fs.unlink(`images/${filename}`, () => {
+            db.Post.destroy({ where: { id: post.id } });
+            res.status(200).json({ message: "Post supprimé" });
+          });
+        } else {
+          db.Post.destroy({ where: { id: post.id } }, { truncate: true });
+          res.status(200).json({ message: "Post supprimé" });
+        }
+      } else {
+        res.status(400).json({ message: "Operation impossible" });
+      }
+  
+      return res.status(500).send({ error: "Erreur serveur" });
+    
+  };
+  
   

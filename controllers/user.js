@@ -10,18 +10,19 @@ const {Op}= require('sequelize')
 // Création d'un nouveau profile 
 
 exports.signUp = async (req, res) => {
-    
+      const email =cryptojs.HmacSHA256(req.body.email, process.env.EMAIL_KEY).toString(); 
       const user = await db.User.findOne({
-        where: { [Op.or]:[{email: req.body.email},{pseudo: req.body.pseudo}] },
+        where: { [Op.or]:[{email: email},{pseudo: req.body.pseudo}] },
       });
       if (user !== null) {
           return res.status(403).json({ error: "identifiant dejà pris" });
   
       } else {
         const hash = await bcrypt.hash(req.body.password, 10);
-        const newUser = await db.User.create({
+
+       await db.User.create({ 
           pseudo: req.body.pseudo,
-          email: cryptojs.HmacSHA256(req.body.email, process.env.EMAIL_KEY).toString(), 
+          email: email, 
           password: hash,
           admin: false,
             });
@@ -41,11 +42,11 @@ exports.signUp = async (req, res) => {
       }); // on vérifie que l'adresse mail figure bien dan la bdd
       if (user === null) {
           console.log(user)
-        return res.status(403).send({ error: "Connexion échouée" });
+        return res.status(404).send({ error: "identifiant incorrect" });
       } else {
         const hash = await bcrypt.compare(req.body.password, user.password); // on compare les mots de passes
         if (!hash) {
-          return res.status(401).send({ error: "Mot de passe incorrect !" });
+          return res.status(404).send({ error: "identifiant incorrect" });
         } else {
             const newToken = jsonwebtoken.sign(
                 { userId: user.id },
@@ -83,7 +84,7 @@ exports.signUp = async (req, res) => {
       exports.getAllProfile = async (req, res) => {
 
           const users = await db.User.findAll({
-            attributes: ["pseudo", "id", "photo", "email"],
+            attributes: ["pseudo", "id", "photo"],
             where: {
               id: {
                 [Op.ne]: 1,
@@ -91,8 +92,6 @@ exports.signUp = async (req, res) => {
             },
           });
           res.status(200).send(users);
-       
-          return res.status(500).send({ error: "Erreur serveur" });
         
       };
 

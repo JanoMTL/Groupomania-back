@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
           allowNull: false
         }, onDelete:'CASCADE', 
       })
-        
+      models.Post.hasMany(models.Like)  
 
     }
   };
